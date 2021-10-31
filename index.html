@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Drawflow</title>
+</head>
+<body>
+  <script src="drawflow.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js" integrity="sha256-KzZiKy0DWYsnwMF+X1DvQngQ2/FxF7MF3Ff72XcpuPs=" crossorigin="anonymous"></script>
+  <link rel="stylesheet" type="text/css" href="src/drawflow.css" />
+  <link rel="stylesheet" type="text/css" href="docs/beautiful.css" />
+  <link rel="stylesheet" type="text/css" href="docs/stu.css" />
+  <!-- above is a copy of this below, stu changed beautiful.css width increased. stu added plotly! stu added runsim.js & eel
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
+  -->
+  <script src='https://cdn.plot.ly/plotly-2.4.2.min.js'></script>
+  <script type="text/javascript" src="/eel.js"></script>
+  
+
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+  <script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+<!-- stu added style. pre should help export button -->
+  <style> 
+      .bigwid {
+        width: 300px
+      }
+      .tableFixHead {
+        overflow-y: auto;
+        height: 250px;
+      }
+      .tableFixHead thead th {
+        position: sticky;
+        top: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+      }
+      th {
+        background: #eee;
+      }
+      .table td, .table th, .tableFixHead {
+        font-size: 16px;
+      }
+      .format-pre .pre {
+      background: #49483e;
+      color: #f7f7f7;
+      padding: 10px;
+      font-size: 8px;
+      }
+  </style>
+
+
+  <header>
+    <h2>Overclock</h2>
+    <div class="github-link"><a href="https://github.com/jerosoler/Drawflow" target="_blank"><i class="fab fa-github fa-3x"></i></a>
+    <button class="runsim">Run Sim</button>
+    </div>
+
+  </header>
+  <div class="wrapper">
+    <div class="col">
+      
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="fleet">
+        <i class="fas fa-code-branch"></i><span> Fleet of Systems</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="time">
+        <i class="fas fa-code-branch"></i><span> Time Settings</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="assets">
+        <i class="fas fa-code-branch"></i><span> Assets</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="csvread">
+        <i class="fas fa-code-branch"></i><span> Import Data</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="Generator">
+        <i class="fas fa-code-branch"></i><span> Generator</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="Service_Resourced">
+        <i class="fas fa-code-branch"></i><span> Service Resourced</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="Service_Constrained">
+        <i class="fas fa-code-branch"></i><span> Service Constrained</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="multiple">
+        <i class="fas fa-code-branch"></i><span> Multiple inputs/outputs</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="personalized">
+        <i class="fas fa-fill"></i><span> Personalized</span>
+      </div>
+      <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="dbclick">
+        <i class="fas fa-mouse"></i><span> DBClick!</span>
+      </div>
+      
+
+    </div>
+    <div class="col-right">
+      <div class="menu">
+        <ul>
+          <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected">Home</li>
+          <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li>
+        </ul>
+        
+      </div>
+
+      <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
+<!-- code as was
+        <div class="btn-export" onclick="Swal.fire({ title: 'Export',
+        html: '<pre><code>'+JSON.stringify(editor.export(), null,4)+'</code></pre>'
+        })">Export</div>
+        -->
+        <div class="btn-export" onclick="eel.js_to_py(JSON.stringify(editor.export(), null,4))">Export</div>
+        <div class="btn-clear" onclick="editor.clearModuleSelected()">Clear</div>
+        <div class="btn-copy" onclick="localStorage.setItem('localfile',JSON.stringify(editor.export()))">Copy</div>
+        <div class="btn-paste" onclick="editor.import(JSON.parse(localStorage.getItem('localfile')))">Paste</div>
+        <div class="btn-lock">
+          <i id="lock" class="fas fa-lock" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>
+          <i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='edit'; changeMode('unlock');" style="display:none;"></i>
+        </div>
+        <div class="bar-zoom">
+          <i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
+          <i class="fas fa-search" onclick="editor.zoom_reset()"></i>
+          <i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+        </div>
+        <div class="random_number">sim result</div>
+      </div>
+    </div>
+  </div>
+  <script src="/runsim.js"></script>
+  <!-- this script here has to come after the html div .random_number -->
+
+
+  <script>
+
+    var id = document.getElementById("drawflow");
+    const editor = new Drawflow(id);
+    editor.reroute = true;
+    editor.reroute_fix_curvature = true;
+    editor.force_first_input = false;
+
+  /*
+    editor.createCurvature = function(start_pos_x, start_pos_y, end_pos_x, end_pos_y, curvature_value, type) {
+      var center_x = ((end_pos_x - start_pos_x)/2)+start_pos_x;
+      return ' M ' + start_pos_x + ' ' + start_pos_y + ' L '+ center_x +' ' +  start_pos_y  + ' L ' + center_x + ' ' +  end_pos_y  + ' L ' + end_pos_x + ' ' + end_pos_y;
+    }*/
+
+
+
+    
+
+    const dataToImport =  {"drawflow":{"Home":{"data":{"1":{"id":1,"name":"welcome","data":{},"class":"welcome","html":"\n    <div>\n      <div class=\"title-box\">👏 Welcome!!</div>\n      <div class=\"box\">\n        <p>Simple flow library <b>demo</b>\n        <a href=\"https://github.com/jerosoler/Drawflow\" target=\"_blank\">Drawflow</a> by <b>Jero Soler</b></p><br>\n\n        <p>Multiple input / outputs<br>\n           Data sync nodes<br>\n           Import / export<br>\n           Modules support<br>\n           Simple use<br>\n           Type: Fixed or Edit<br>\n           Events: view console<br>\n           Pure Javascript<br>\n        </p>\n        <br>\n        <p><b><u>Shortkeys:</u></b></p>\n        <p>🎹 <b>Delete</b> for remove selected<br>\n        💠 Mouse Left Click == Move<br>\n        ❌ Mouse Right == Delete Option<br>\n        🔍 Ctrl + Wheel == Zoom<br>\n        📱 Mobile support<br>\n        ...</p>\n      </div>\n    </div>\n    ", "typenode": false, "inputs":{},"outputs":{},"pos_x":50,"pos_y":50},"2":{"id":2,"name":"slack","data":{},"class":"slack","html":"\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-slack\"></i> Slack chat message</div>\n          </div>\n          ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"7","input":"output_1"}]}},"outputs":{},"pos_x":1028,"pos_y":87},"3":{"id":3,"name":"telegram","data":{"channel":"channel_2"},"class":"telegram","html":"\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-telegram-plane\"></i> Telegram bot</div>\n            <div class=\"box\">\n              <p>Send to telegram</p>\n              <p>select channel</p>\n              <select df-channel>\n                <option value=\"channel_1\">Channel 1</option>\n                <option value=\"channel_2\">Channel 2</option>\n                <option value=\"channel_3\">Channel 3</option>\n                <option value=\"channel_4\">Channel 4</option>\n              </select>\n            </div>\n          </div>\n          ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"7","input":"output_1"}]}},"outputs":{},"pos_x":1032,"pos_y":184},"4":{"id":4,"name":"email","data":{},"class":"email","html":"\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-at\"></i> Send Email </div>\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"5","input":"output_1"}]}},"outputs":{},"pos_x":1033,"pos_y":439},"5":{"id":5,"name":"template","data":{"template":"Write your template"},"class":"template","html":"\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-code\"></i> Template</div>\n              <div class=\"box\">\n                Ger Vars\n                <textarea df-template></textarea>\n                Output template with vars\n              </div>\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"6","input":"output_1"}]}},"outputs":{"output_1":{"connections":[{"node":"4","output":"input_1"},{"node":"11","output":"input_1"}]}},"pos_x":607,"pos_y":304},"6":{"id":6,"name":"github","data":{"name":"https://github.com/jerosoler/Drawflow"},"class":"github","html":"\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-github \"></i> Github Stars</div>\n            <div class=\"box\">\n              <p>Enter repository url</p>\n            <input type=\"text\" df-name>\n            </div>\n          </div>\n          ", "typenode": false, "inputs":{},"outputs":{"output_1":{"connections":[{"node":"5","output":"input_1"}]}},"pos_x":341,"pos_y":191},"7":{"id":7,"name":"facebook","data":{},"class":"facebook","html":"\n        <div>\n          <div class=\"title-box\"><i class=\"fas fa-code-branch\"></i> Facebook Message</div>\n        </div>\n        ", "typenode": false, "inputs":{},"outputs":{"output_1":{"connections":[{"node":"2","output":"input_1"},{"node":"3","output":"input_1"},{"node":"11","output":"input_1"}]}},"pos_x":347,"pos_y":87},"11":{"id":11,"name":"log","data":{},"class":"log","html":"\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-file-signature\"></i> Save log file </div>\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"5","input":"output_1"},{"node":"7","input":"output_1"}]}},"outputs":{},"pos_x":1031,"pos_y":363}}},"Other":{"data":{"8":{"id":8,"name":"personalized","data":{},"class":"personalized","html":"\n            <div>\n              Personalized\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"12","input":"output_1"},{"node":"12","input":"output_2"},{"node":"12","input":"output_3"},{"node":"12","input":"output_4"}]}},"outputs":{"output_1":{"connections":[{"node":"9","output":"input_1"}]}},"pos_x":764,"pos_y":227},"9":{"id":9,"name":"dbclick","data":{"name":"Hello World!!"},"class":"dbclick","html":"\n            <div>\n            <div class=\"title-box\"><i class=\"fas fa-mouse\"></i> Db Click</div>\n              <div class=\"box dbclickbox\" ondblclick=\"showpopup(event)\">\n                Db Click here\n                <div class=\"modal\" style=\"display:none\">\n                  <div class=\"modal-content\">\n                    <span class=\"close\" onclick=\"closemodal(event)\">&times;</span>\n                    Change your variable {name} !\n                    <input type=\"text\" df-name>\n                  </div>\n\n                </div>\n              </div>\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[{"node":"8","input":"output_1"}]}},"outputs":{"output_1":{"connections":[{"node":"12","output":"input_2"}]}},"pos_x":209,"pos_y":38},"12":{"id":12,"name":"multiple","data":{},"class":"multiple","html":"\n            <div>\n              <div class=\"box\">\n                Multiple!\n              </div>\n            </div>\n            ", "typenode": false, "inputs":{"input_1":{"connections":[]},"input_2":{"connections":[{"node":"9","input":"output_1"}]},"input_3":{"connections":[]}},"outputs":{"output_1":{"connections":[{"node":"8","output":"input_1"}]},"output_2":{"connections":[{"node":"8","output":"input_1"}]},"output_3":{"connections":[{"node":"8","output":"input_1"}]},"output_4":{"connections":[{"node":"8","output":"input_1"}]}},"pos_x":179,"pos_y":272}}}}}
+    editor.start();
+    editor.import(dataToImport);
+
+
+
+  /*
+    var welcome = `
+    <div>
+      <div class="title-box">👏 Welcome!!</div>
+      <div class="box">
+        <p>Simple flow library <b>demo</b>
+        <a href="https://github.com/jerosoler/Drawflow" target="_blank">Drawflow</a> by <b>Jero Soler</b></p><br>
+
+        <p>Multiple input / outputs<br>
+           Data sync nodes<br>
+           Import / export<br>
+           Modules support<br>
+           Simple use<br>
+           Type: Fixed or Edit<br>
+           Events: view console<br>
+           Pure Javascript<br>
+        </p>
+        <br>
+        <p><b><u>Shortkeys:</u></b></p>
+        <p>🎹 <b>Delete</b> for remove selected<br>
+        💠 Mouse Left Click == Move<br>
+        ❌ Mouse Right == Delete Option<br>
+        🔍 Ctrl + Wheel == Zoom<br>
+        📱 Mobile support<br>
+        ...</p>
+      </div>
+    </div>
+    `;
+*/
+
+
+    //editor.addNode(name, "typenode": false,  inputs, outputs, posx, posy, class, data, html);
+    /*editor.addNode('welcome', 0, 0, 50, 50, 'welcome', {}, welcome );
+    editor.addModule('Other');
+    */
+
+    // Events!
+    editor.on('nodeCreated', function(id) {
+      console.log("Node created " + id);
+    })
+
+    editor.on('nodeRemoved', function(id) {
+      console.log("Node removed " + id);
+    })
+
+    editor.on('nodeSelected', function(id) {
+      console.log("Node selected " + id);
+    })
+
+    editor.on('moduleCreated', function(name) {
+      console.log("Module Created " + name);
+    })
+
+    editor.on('moduleChanged', function(name) {
+      console.log("Module Changed " + name);
+    })
+
+    editor.on('connectionCreated', function(connection) {
+      console.log('Connection created');
+      console.log(connection);
+    })
+
+    editor.on('connectionRemoved', function(connection) {
+      console.log('Connection removed');
+      console.log(connection);
+    })
+/*
+    editor.on('mouseMove', function(position) {
+      console.log('Position mouse x:' + position.x + ' y:'+ position.y);
+    })
+*/
+    editor.on('nodeMoved', function(id) {
+      console.log("Node moved " + id);
+    })
+
+    editor.on('zoom', function(zoom) {
+      console.log('Zoom level ' + zoom);
+    })
+
+    editor.on('translate', function(position) {
+      console.log('Translate x:' + position.x + ' y:'+ position.y);
+    })
+
+    editor.on('addReroute', function(id) {
+      console.log("Reroute added " + id);
+    })
+
+    editor.on('removeReroute', function(id) {
+      console.log("Reroute removed " + id);
+    })
+    /* DRAG EVENT */
+
+    /* Mouse and Touch Actions */
+
+    var elements = document.getElementsByClassName('drag-drawflow');
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].addEventListener('touchend', drop, false);
+      elements[i].addEventListener('touchmove', positionMobile, false);
+      elements[i].addEventListener('touchstart', drag, false );
+    }
+
+    var mobile_item_selec = '';
+    var mobile_last_move = null;
+   function positionMobile(ev) {
+     mobile_last_move = ev;
+   }
+
+   function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      if (ev.type === "touchstart") {
+        mobile_item_selec = ev.target.closest(".drag-drawflow").getAttribute('data-node');
+      } else {
+      ev.dataTransfer.setData("node", ev.target.getAttribute('data-node'));
+      }
+    }
+
+    function drop(ev) {
+      if (ev.type === "touchend") {
+        var parentdrawflow = document.elementFromPoint( mobile_last_move.touches[0].clientX, mobile_last_move.touches[0].clientY).closest("#drawflow");
+        if(parentdrawflow != null) {
+          addNodeToDrawFlow(mobile_item_selec, mobile_last_move.touches[0].clientX, mobile_last_move.touches[0].clientY);
+        }
+        mobile_item_selec = '';
+      } else {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("node");
+        addNodeToDrawFlow(data, ev.clientX, ev.clientY);
+      }
+
+    }
+
+    function Fleet_append() {
+      let table = document.getElementById("FleetTable");
+      let row = table.insertRow(1);
+      let cell1 = row.insertCell(0);
+      let cell2 = row.insertCell(1);
+      let cell3 = row.insertCell(2);
+      cell1.innerHTML = "NEW CELL1";
+      cell2.innerHTML = "NEW CELL2";
+      cell3.innerHTML = "NEW CELL3";
+    }
+
+
+    function Lri_append(num) {
+      let table = document.getElementById("LriTable" + num);
+      let row = table.insertRow(1);
+      let cell1 = row.insertCell(0);
+      let cell2 = row.insertCell(1);
+      let cell3 = row.insertCell(2);
+      cell1.innerHTML = "New Asset";
+      cell2.innerHTML = "1000";
+      cell3.innerHTML = `<td><select name="trials">
+                <option value="FH">FH</option>
+                <option value="Sorties">Sorties </option>
+                <option value="Landings">Landings </option>
+                <option value="Firings">Firings </option>
+                </select></td>`;
+    }
+    async function distplt(mu,dist,div) {
+      // Inside a function marked 'async' we can use the 'await' keyword.
+      let n = [];
+
+      console.log(dist)
+      switch (dist)
+      {
+      case "poisson":
+      n = await eel.poissrnd(mu)();
+      break;
+      case "exponential":
+      n = await eel.exprnd(mu)();
+      break;
+      case "uniform":
+      n = await eel.unifrnd(mu)();
+      break;
+      case "constant":
+      n = await eel.constrnd(mu)();
+      break;
+      default:
+      alert ("based on inputs");
+      }
+
+      // here, we'll use map to apply across the array casting to floats
+      n = n.map(Number) 
+      
+      console.log("Got this from Python: " + n);
+
+      var data = [
+        {
+          x: n,
+          type: 'histogram',
+        histnorm: 'probability',
+        marker: {
+              color: 'rgb(255,255,100)',
+          },
+        }
+      ];
+
+
+      var layout = {
+        title: 'Histogram of Service Times',
+        yaxis: {fixedrange: true},
+        xaxis : {fixedrange: true},
+        showlegend: false
+    };
+      Plotly.newPlot(div, data, layout, {staticPlot: true});
+    }
+
+// {editable: true}
+    
+
+    function drawhist(ts,div){
+      let mu = parseFloat(document.getElementById(ts).value);
+      let dist = document.getElementById('distrib'+ ser_counter).value;
+      console.log('Calling Python. Mean: ' + mu + ', Dist: ' + dist);
+      distplt(mu,dist,div); 
+    }
+
+    async function readFile(input,csv_counter) {
+      let file = input.files[0];
+
+      let reader = new FileReader();
+
+      let r = reader.readAsText(file);
+
+      reader.onload = async function() {
+        console.log(reader.result);
+        console.log('Calling Python. Read file');
+        let h = await eel.read_table(reader.result)();
+        document.getElementById('impfile' + csv_counter).innerHTML = h;
+
+      };
+
+      reader.onerror = function() {
+        console.log(reader.error);
+      };
+
+    }
+
+    async function importcsv(csv_counter){
+      //let fp = document.getElementById('fp'+csv_counter).value;
+      let r = await readFile(document.getElementById('fp'+csv_counter),csv_counter);
+      console.log(typeof(r));
+      console.log(r);
+      // console.log('Calling Python. Read file');
+      // let h = await eel.read_table({r})();
+      // document.getElementById('impfile' + csv_counter).innerHTML = h;
+      
+
+    }
+
+
+
+
+      
+
+
+    function addNodeToDrawFlow(name, pos_x, pos_y) {
+      if(editor.editor_mode === 'fixed') {
+        return false;
+      }
+      pos_x = pos_x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)) - (editor.precanvas.getBoundingClientRect().x * ( editor.precanvas.clientWidth / (editor.precanvas.clientWidth * editor.zoom)));
+      pos_y = pos_y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)) - (editor.precanvas.getBoundingClientRect().y * ( editor.precanvas.clientHeight / (editor.precanvas.clientHeight * editor.zoom)));
+
+
+      switch (name) {
+        case 'facebook':
+        var facebook = `
+        <div>
+          <div class="title-box"><i class="fas fa-code-branch"></i> Facebook Message</div>
+        </div>
+        `;
+          editor.addNode('facebook', 0,  1, pos_x, pos_y, 'facebook', {}, facebook );
+          break;
+        case 'slack':
+          var slackchat = `
+          <div>
+            <div class="title-box"><i class="fab fa-slack"></i> Slack chat message</div>
+          </div>
+          `
+          editor.addNode('slack', 1, 0, pos_x, pos_y, 'slack', {}, slackchat );
+          break;
+        case 'github':
+          var githubtemplate = `
+          <div>
+            <div class="title-box"><i class="fab fa-github "></i> Github Stars</div>
+            <div class="box">
+              <p>Enter repository url</p>
+            <input type="text" df-name>
+            </div>
+          </div>
+          `;
+          editor.addNode('github', 0, 1, pos_x, pos_y, 'github', { "name": ''}, githubtemplate );
+          break;
+        case 'telegram':
+          var telegrambot = `
+          <div>
+            <div class="title-box"><i class="fab fa-telegram-plane"></i> Telegram bot</div>
+            <div class="box">
+              <p>Send to telegram</p>
+              <p>select channel</p>
+              <select df-channel>
+                <option value="channel_1">Channel 1</option>
+                <option value="channel_2">Channel 2</option>
+                <option value="channel_3">Channel 3</option>
+                <option value="channel_4">Channel 4</option>
+              </select>
+            </div>
+          </div>
+          `;
+          editor.addNode('telegram', 1, 0, pos_x, pos_y, 'telegram', { "channel": 'channel_3'}, telegrambot );
+          break;
+        case 'aws':
+          var aws = `
+          <div>
+            <div class="title-box"><i class="fab fa-aws"></i> Aws Save </div>
+            <div class="box">
+              <p>Save in aws</p>
+              <input type="text" df-db-dbname placeholder="DB name"><br><br>
+              <input type="text" df-db-key placeholder="DB key">
+              <p>Output Log</p>
+            </div>
+          </div>
+          `;
+          editor.addNode('aws', 1, 1, pos_x, pos_y, 'aws', { "db": { "dbname": '', "key": '' }}, aws );
+          break;
+        case 'log':
+            var log = `
+            <div>
+              <div class="title-box"><i class="fas fa-file-signature"></i> Save log file </div>
+            </div>
+            `;
+            editor.addNode('log', 1, 0, pos_x, pos_y, 'log', {}, log );
+            break;
+          case 'google':
+            var google = `
+            <div>
+              <div class="title-box"><i class="fab fa-google-drive"></i> Google Drive save </div>
+            </div>
+            `;
+            editor.addNode('google', 1, 0, pos_x, pos_y, 'google', {}, google );
+            break;
+          case 'email':
+            var email = `
+            <div>
+              <div class="title-box"><i class="fas fa-at"></i> Send Email </div>
+            </div>
+            `;
+            editor.addNode('email', 1, 0, pos_x, pos_y, 'email', {}, email );
+            break;
+
+          case 'template':
+            var template = `
+            <div>
+              <div class="title-box"><i class="fas fa-code"></i> Template</div>
+              <div class="box">
+                Ger Vars
+                <textarea df-template></textarea>
+                Output template with vars
+              </div>
+            </div>
+            `;
+            editor.addNode('template', 1, 1, pos_x, pos_y, 'template', { "template": 'Write your template'}, template );
+            break;
+          
+          case 'fleet':
+            var fleet = `
+            <div>
+              <div class="box" >
+                <table contenteditable id="FleetTable">
+                <tr>
+                  <th>Asset</th>
+                  <th>Rate per Million</th>
+                  <th>Driver</th>
+                </tr>
+                <tr>
+                  <td>ABC0001</td>
+                  <td>1000</td>
+                  <td>FH</td>
+                </tr>
+                <tr>
+                  <td>ABC0002</td>
+                  <td>1000</td>
+                  <td>Sorties</td>
+                </tr>
+              </table>
+              <br>
+              <iframe src="/typhoon_proj/typhoon.html" title="typhoon" ></iframe> 
+
+              <button type="button" onclick="Fleet_append()">Append</button>
+
+
+              </div>
+            </div>
+            `;
+            editor.addNode('fleet', 3, 4, pos_x, pos_y, 'fleet', {}, fleet );
+            break;
+            // height="100" width="100" // for iframe use
+
+          case 'time':
+            if( typeof time_counter == 'undefined' ) {
+              time_counter = 0;
+              }
+              time_counter++;
+            if (time_counter > 1) {
+              alert("Only one sim time block needed!")
+            }
+            else {
+            var time = `
+            <div>
+              <div class="box" >
+
+                <label for="startdate">Model Start: </label>
+                <input type="date" id="startdate" name="startdate">
+
+                <table contenteditable id="TimeTable">
+                <tr>
+                  <th>Holiday</th>
+                  <th>Start</th>
+                  <th>End</th>
+                </tr>
+                <tr>
+                  <td>Christmas </td>
+                  <td><input type="date"></td>
+                  <td><input type="date"></td>
+                </tr>
+                <tr>
+                  <td>Easter </td>
+                  <td><input type="date"></td>
+                  <td><input type="date"></td>
+                </tr>
+                <tr>
+                  <td>Eid </td>
+                  <td><input type="date"></td>
+                  <td><input type="date"></td>
+                </tr>
+              </table>
+              <br>
+
+              <button type="button" onclick="Time_update()">Update </button>
+              
+
+
+              </div>
+            </div>
+            `;
+            editor.addNode('time', 0, 0, pos_x, pos_y, 'time', {}, time );
+            break;
+          }
+
+          case 'assets':
+            if( typeof echelon_counter == 'undefined' ) {
+              echelon_counter = 0;
+            }
+            echelon_counter++;
+          
+            var assets = `
+            <div>
+              <div class="title-box"> LRIs </div>
+              <div class="tableFixHead box"> 
+              <table contenteditable id="LriTable` + echelon_counter + `">
+              <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Rate per Million</th>
+                <th>Driver</th>
+              </tr>
+              </thead>
+              <tr>
+                <td>ABC0001</td>
+                <td>1000</td>
+                <td><select name="trials">
+                <option value="FH">FH</option>
+                <option value="Sorties">Sorties </option>
+                <option value="Landings">Landings </option>
+                <option value="Firings">Firings </option>
+                </select></td>
+              </tr>
+              <tr>
+                <td>ABC0002</td>
+                <td>1000</td>
+                <td><select name="trials">
+                <option value="FH">FH</option>
+                <option value="Sorties">Sorties </option>
+                <option value="Landings">Landings </option>
+                <option value="Firings">Firings </option>
+                </select></td>
+              </tr>
+            </table>
+            </div>
+            <br>
+
+            <button type="button" onclick="Lri_append(` + echelon_counter + `)"> Append </button>
+
+            </div>
+            `;
+              editor.addNode('assets', 0,  1, pos_x, pos_y, 'assets', {}, assets );
+              break;
+
+          case 'csvread':
+            if( typeof csv_counter == 'undefined' ) {
+              csv_counter = 0;
+            }
+            csv_counter++;
+          
+            var csvread = `
+            <div>
+              <div class="title-box"> Import csv </div>
+              <label for="fp` + csv_counter + `">Select a csv file:</label>
+              <input type="file" id="fp` + csv_counter + `" name="fp` + csv_counter + `">
+              <div class="tableFixHead box" id = "impfile` + csv_counter + `"> 
+
+              </div>
+
+            </div>
+            <br>
+
+            <button type="button" onclick="importcsv(` + csv_counter + `)"> Import </button>
+
+            </div>
+            `;
+              editor.addNode('assets', 0,  1, pos_x, pos_y, 'csvread', {csv_counter}, csvread );
+              break;
+
+          case 'Generator':
+            var gener = `
+            <div>
+              <div class="title-box"> Generator </div>
+              <div class="box">
+                <p>Demand name</p>
+                <input type="text" placeholder="Demand name"><br><br>
+                <p>Rate </p><br><br>
+                <input id="rate_trial" type="number" df-ser-time placeholder=1 min=0 max=1000000>
+                <select name="per trial" id="trial" >                
+                <option value="calendar hours">calendar hours </option>
+                <option value="flying hours">flying hours </option>
+                <option value="operating hours">operaing hours </option>
+                <option value="firings">firings </option>
+                <option value="lanings">landings </option>
+                </select> 
+                <p>Service time (mean)</p>
+                <input id="gts" type="number" df-ser-time placeholder=1>
+                <select name="time_source" id="distrib" >                
+                <option value="constant">constant </option>
+                <option value="uniform">uniform </option>
+                <option value="exponential">exponential </option>
+                <option value="poisson">poisson </option>
+                <option value="input">input </option>
+                </select> 
+                <div id='myDiv' height: 100px><!-- Plotly chart will be drawn inside this DIV -->
+                </div>
+
+                <button type="button" onclick="drawhist('ts','myDiv')"> Draw </button>
+              </div>
+            </div>
+            `;
+            editor.addNode('gener', 2, 1, pos_x, pos_y, 'gener', {}, gener );
+            break;
+
+          case 'Service_Resourced':
+            if( typeof ser_counter == 'undefined' ) {
+              ser_counter = 0;
+              }
+              ser_counter++;
+            var serRes = `
+            <div>
+              <div class="title-box"> Service (Resourced) </div>
+              <div class="box">
+                <p>Service Name</p>
+                <input type="text" placeholder="Service name"><br><br>
+                <p>Capacity</p>
+                <input type="number" df-ser-cap placeholder=1>
+                <p>Resource</p><br><br>
+                <p>Service time (mean)</p>
+                <input id="ts` + ser_counter + `" type="number" df-ser-time placeholder=1>
+                <select name="time_source" id="distrib` + ser_counter + `" >                
+                <option value="constant">constant </option>
+                <option value="uniform">uniform </option>
+                <option value="exponential">exponential </option>
+                <option value="poisson">poisson </option>
+                <option value="input">input </option>
+                </select> 
+                <div id='myDiv` + ser_counter + `' height: 100px><!-- Plotly chart will be drawn inside this DIV -->
+                </div>
+
+                <button type="button" onclick="drawhist('ts` + ser_counter + `','myDiv` + ser_counter + `')"> Draw </button>
+              </div>
+            </div>
+            `;
+            editor.addNode('serRes', 2, 1, pos_x, pos_y, 'serRes', { "ser": { "cap": 1, "time": 1 }}, serRes );
+            break;
+
+          case 'Service_Constrained':
+            var ser = `
+            <div>
+              <div class="title-box"> Service (Constrained) </div>
+              <div class="box">
+                <p>Service Name</p>
+                <input type="text"  placeholder="Service name"><br><br>
+                <p>Capacity</p>
+                <input type="number" df-ser-cap placeholder=1>
+                <p>Service time (mean)</p>
+                <input type="number" df-ser-time placeholder=1>
+                <select name="time_source">
+                <option value="input">input</option>
+                <option value="constant">constant </option>
+                <option value="exponential">exponential </option>
+                <option value="normal">normal (gauss) </option>
+                </select>
+              </div>
+            </div>
+            `;
+            editor.addNode('ser', 1, 1, pos_x, pos_y, 'ser', { "ser": { "cap": 1, "time": 1 }}, ser );
+            break;
+
+
+          case 'multiple':
+            var multiple = `
+            <div>
+              <div class="box">
+                Multiple!
+              </div>
+            </div>
+            `;
+            editor.addNode('multiple', 3, 4, pos_x, pos_y, 'multiple', {}, multiple );
+            break;
+          case 'personalized':
+            var personalized = `
+            <div>
+              Personalized
+            </div>
+            `;
+            editor.addNode('personalized', 1, 1, pos_x, pos_y, 'personalized', {}, personalized );
+            break;
+          case 'dbclick':
+            var dbclick = `
+            <div>
+            <div class="title-box"><i class="fas fa-mouse"></i> Db Click</div>
+              <div class="box dbclickbox" ondblclick="showpopup(event)">
+                Db Click here
+                <div class="modal" style="display:none">
+                  <div class="modal-content">
+                    <span class="close" onclick="closemodal(event)">&times;</span>
+                    Change your variable {name} !
+                    <input type="text" df-name>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            `;
+            editor.addNode('dbclick', 1, 1, pos_x, pos_y, 'dbclick', { name: ''}, dbclick );
+            break;
+
+        default:
+      }
+    }
+
+  var transform = '';
+  function showpopup(e) {
+    e.target.closest(".drawflow-node").style.zIndex = "9999";
+    e.target.children[0].style.display = "block";
+    //document.getElementById("modalfix").style.display = "block";
+
+    //e.target.children[0].style.transform = 'translate('+translate.x+'px, '+translate.y+'px)';
+    transform = editor.precanvas.style.transform;
+    editor.precanvas.style.transform = '';
+    editor.precanvas.style.left = editor.canvas_x +'px';
+    editor.precanvas.style.top = editor.canvas_y +'px';
+    console.log(transform);
+
+    //e.target.children[0].style.top  =  -editor.canvas_y - editor.container.offsetTop +'px';
+    //e.target.children[0].style.left  =  -editor.canvas_x  - editor.container.offsetLeft +'px';
+    editor.editor_mode = "fixed";
+
+  }
+
+   function closemodal(e) {
+     e.target.closest(".drawflow-node").style.zIndex = "2";
+     e.target.parentElement.parentElement.style.display  ="none";
+     //document.getElementById("modalfix").style.display = "none";
+     editor.precanvas.style.transform = transform;
+       editor.precanvas.style.left = '0px';
+       editor.precanvas.style.top = '0px';
+      editor.editor_mode = "edit";
+   }
+
+    function changeModule(event) {
+      var all = document.querySelectorAll(".menu ul li");
+        for (var i = 0; i < all.length; i++) {
+          all[i].classList.remove('selected');
+        }
+      event.target.classList.add('selected');
+    }
+
+    function changeMode(option) {
+
+    //console.log(lock.id);
+      if(option == 'lock') {
+        lock.style.display = 'none';
+        unlock.style.display = 'block';
+      } else {
+        lock.style.display = 'block';
+        unlock.style.display = 'none';
+      }
+
+    }
+    
+
+  </script>
+</body>
+
+</html>
